@@ -1,4 +1,4 @@
-from app.etl import clean_sum
+from app.core import clean_sum
 
 
 def test_clean_sum_basic():

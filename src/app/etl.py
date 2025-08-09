@@ -3,6 +3,8 @@ import time
 
 import psycopg2
 
+from app.core import clean_sum
+
 
 def wait_for_db():
     for _ in range(30):
@@ -13,7 +15,7 @@ def wait_for_db():
                 user=os.getenv("DB_USER", "postgres"),
                 password=os.getenv("DB_PASS", "postgres"),
                 dbname=os.getenv("DB_NAME", "postgres"),
-            ) as _:
+            ):
                 return
         except Exception:
             time.sleep(1)
@@ -31,7 +33,6 @@ def main():
     ) as conn:
         with conn.cursor() as cur:
             cur.execute("CREATE TABLE IF NOT EXISTS nums(x int PRIMARY KEY)")
-            # idempotent insert (upsert-like)
             for v in (1, 2, 3):
                 cur.execute("INSERT INTO nums(x) VALUES (%s) ON CONFLICT DO NOTHING", (v,))
             conn.commit()
@@ -41,4 +42,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print("✅ sum =", clean_sum([1, None, 2, 3]))
     main()
