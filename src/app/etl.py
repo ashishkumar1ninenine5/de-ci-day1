@@ -1,9 +1,41 @@
-def clean_sum(nums):
-    return sum(x for x in nums if x is not None)
+import os, time
+import psycopg2
+
+
+def wait_for_db():
+    for _ in range(30):
+        try:
+            with psycopg2.connect(
+                host=os.getenv("DB_HOST", "db"),
+                port=os.getenv("DB_PORT", "5432"),
+                user=os.getenv("DB_USER", "postgres"),
+                password=os.getenv("DB_PASS", "postgres"),
+                dbname=os.getenv("DB_NAME", "postgres"),
+            ) as _:
+                return
+        except Exception:
+            time.sleep(1)
+    raise SystemExit("DB not ready after retries")
 
 
 def main():
-    print("✅ sum =", clean_sum([1, None, 2, 3]))
+    wait_for_db()
+    with psycopg2.connect(
+        host=os.getenv("DB_HOST", "db"),
+        port=os.getenv("DB_PORT", "5432"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASS", "postgres"),
+        dbname=os.getenv("DB_NAME", "postgres"),
+    ) as conn:
+        with conn.cursor() as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS nums(x int PRIMARY KEY)")
+            # idempotent insert (upsert-like)
+            for v in (1, 2, 3):
+                cur.execute("INSERT INTO nums(x) VALUES (%s) ON CONFLICT DO NOTHING", (v,))
+            conn.commit()
+            cur.execute("SELECT SUM(x) FROM nums")
+            (s,) = cur.fetchone()
+            print(f"✅ sum_in_db={s}")
 
 
 if __name__ == "__main__":

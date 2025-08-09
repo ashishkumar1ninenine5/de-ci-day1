@@ -1,1 +1,2 @@
 # runtime deps (empty for now)
+psycopg2-binary==2.9.9

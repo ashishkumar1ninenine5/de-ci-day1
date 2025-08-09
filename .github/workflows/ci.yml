@@ -28,11 +28,45 @@ jobs:
       - name: Format check (black)
         run: black --check .
       - name: Tests (pytest)
-        run: pytest 
+        run: pytest
          
-  build-image:
+  compose-smoke:
     runs-on: ubuntu-latest
     needs: build-test-lint
+    env:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Build ETL image (compose)
+        run: docker compose build etl
+
+      - name: Start only DB
+        run: docker compose up -d db
+
+      - name: Wait for DB healthy
+        run: |
+          for i in {1..60}; do
+            docker compose exec -T db pg_isready -U postgres && exit 0
+            sleep 1
+          done
+          echo "DB not ready in time"; exit 1
+
+      - name: Run ETL (propagate exit code)
+        run: docker compose up --no-deps --exit-code-from etl etl
+
+      - name: Compose down (cleanup)
+        if: always()
+        run: docker compose down -v
+
+  build-image:
+    runs-on: ubuntu-latest
+    needs: [build-test-lint, compose-smoke]
     steps:
       - uses: actions/checkout@v4
       - name: Build docker image
