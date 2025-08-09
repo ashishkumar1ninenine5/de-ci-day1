@@ -1,5 +1,7 @@
 name: day1-ci
 on: { push: {}, pull_request: {} }
+permissions:
+  contents: read
 
 jobs:
   build-test-lint:
@@ -11,21 +13,20 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.10" }
-
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Install dev deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
-
-      - name: Sanity import (one-time debug)
-        run: python -c "import os,sys; print('PWD=',os.getcwd()); print('PYTHONPATH=',os.environ.get('PYTHONPATH')); import app, app.etl; print('OK:', app.etl.clean_sum([1,None,2]))"
-
       - name: Lint (ruff)
         run: ruff check .
-
       - name: Format check (black)
         run: black --check .
-
       - name: Tests (pytest)
         run: pytest 
          
