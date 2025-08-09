@@ -1,0 +1,11 @@
+name: day1-ci
+on:
+  push:
+  pull_request:
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Say Hello
+        run: echo "CI is working!"
