@@ -17,3 +17,5 @@ jobs:
         run: black --check .
       - name: Tests (pytest)
         run: pytest
+      - name: Add src to PYTHONPATH
+        run: echo "PYTHONPATH=$PWD/src" >> $GITHUB_ENV
